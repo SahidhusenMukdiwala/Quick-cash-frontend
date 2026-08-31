@@ -1,2 +1,9 @@
-# Quick-cash-frontend
-Modern, responsive Next.js 16 dashboard UI for QuickCash Ledger built with Tailwind CSS, Lucide icons, and Axios. Features built-in keyboard shortcut navigation, transaction ledger management, real-time analytics widgets, and profile administration.
+# 🎨 QuickCash Ledger - Frontend
+
+The frontend interface for QuickCash Ledger, built with **Next.js 16**, **Tailwind CSS**, and **TypeScript**.
+
+### ✨ Highlights
+- ⚡ **Next.js App Router Architecture**: Optimized page transitions and static rendering.
+- ⌨️ **Keyboard Shortcut Engine**: Built-in hotkeys (`Alt+N`, `Alt+E`, `Alt+D`, `Arrow Keys`) for zero-mouse operations.
+- 📊 **Interactive Dashboard**: Real-time financial ledger metrics, search filters, and transaction modals.
+- 🎨 **Modern Aesthetics**: Premium dark/light themes, sleek card layouts, and accessible UI controls.
