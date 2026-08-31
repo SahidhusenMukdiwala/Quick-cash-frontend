@@ -1,0 +1,25 @@
+========================================================================================================
+                                QUICKCASH LEDGER - SHORTCUT KEYS GUIDE
+========================================================================================================
+
++-----------------------+-----------------------+------------------------------------------------------+
+| CATEGORY              | SHORTCUT KEY          | FUNCTIONALITY DESCRIPTION                            |
++-----------------------+-----------------------+------------------------------------------------------+
+| Entry Modal & Toggle  | Alt + N               | Open New Entry Modal (Modal Closed; Default Cash In) |
+| Entry Modal & Toggle  | Alt + N               | Toggle Cash In <-> Cash Out (Modal Open)            |
+| Entry Modal & Toggle  | Alt + I               | Select 'Cash In (Received)' Type (Modal Open)        |
+| Entry Modal & Toggle  | Alt + O               | Select 'Cash Out (Paid)' Type (Modal Open)           |
++-----------------------+-----------------------+------------------------------------------------------+
+| Table Navigation      | Arrow Down ( ↓ )      | Move selection to Next Transaction Row               |
+| Table Navigation      | Arrow Up ( ↑ )        | Move selection to Previous Transaction Row           |
+| Table Actions         | Alt + E               | Open Edit Modal for Highlighted Transaction Row      |
+| Table Actions         | Alt + D / Delete      | Open Delete Modal for Highlighted Transaction Row    |
++-----------------------+-----------------------+------------------------------------------------------+
+| General Controls      | Enter                 | Confirm & Execute Deletion in Delete Modal           |
+| General Controls      | Escape ( Esc )        | Close Any Active Modal Dialog                        |
+| General Controls      | Alt + H / Shift + ?   | Toggle Keyboard Shortcuts Reference Modal            |
++-----------------------+-----------------------+------------------------------------------------------+
+
+========================================================================================================
+NOTE: Hotkeys are safely guarded to prevent triggering while typing in text inputs or textareas.
+========================================================================================================
