@@ -7,11 +7,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  AlertCircle,
-  CheckCircle2,
-  X,
-  Smartphone,
-  LockKeyhole
+  AlertCircle
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
 
@@ -46,18 +42,6 @@ export default function LoginPage(): React.ReactElement {
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  // Forgot Password Modal State
-  const [isForgotModalOpen, setIsForgotModalOpen] = useState<boolean>(false);
-  const [forgotMobile, setForgotMobile] = useState<string>('');
-  const [forgotPasswordState, setForgotPasswordState] = useState<string>('');
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState<string>('');
-  const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
-  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState<boolean>(false);
-
-  const [forgotLoading, setForgotLoading] = useState<boolean>(false);
-  const [forgotSuccess, setForgotSuccess] = useState<string>('');
-  const [forgotError, setForgotError] = useState<string>('');
-
   // Main UI Feedback State
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -70,16 +54,8 @@ export default function LoginPage(): React.ReactElement {
     }
   }, [router]);
 
-  // Derived validation states
+  // Derived validation state
   const isLoginFormFilled = mobile.trim().length === 10 && password.trim().length >= 1;
-
-  const isForgotFormFilled =
-    forgotMobile.trim().length === 10 &&
-    forgotPasswordState.trim().length >= 6 &&
-    forgotConfirmPassword.trim().length >= 6;
-
-  const isPasswordMismatch =
-    forgotConfirmPassword.length > 0 && forgotPasswordState !== forgotConfirmPassword;
 
   // Handle Login Submit using axiosServices
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -124,7 +100,7 @@ export default function LoginPage(): React.ReactElement {
         localStorage.setItem('refresh_token', resultObj.data.refresh_token);
       }
 
-      // Immediately redirect to dashboard without displaying green success alert card
+      // Immediately redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
       const apiErrors = err.response?.data?.errors;
@@ -134,68 +110,6 @@ export default function LoginPage(): React.ReactElement {
           : err.message || 'Failed to connect to authentication server';
       setErrorMsg(apiErrorMessage);
       setLoading(false);
-    }
-  };
-
-  // Handle Forgot Password Submit using axiosServices (Checking Mobile Number)
-  const handleForgotPasswordSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    setForgotError('');
-    setForgotSuccess('');
-
-    if (!/^[0-9]{10}$/.test(forgotMobile)) {
-      setForgotError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-
-    if (forgotPasswordState.length < 6) {
-      setForgotError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (forgotPasswordState !== forgotConfirmPassword) {
-      setForgotError('Password and Confirm Password do not match.');
-      return;
-    }
-
-    setForgotLoading(true);
-
-    try {
-      const response = await axiosServices.post<ApiResponse>('auth/forgot-password', {
-        mobile: forgotMobile.trim(),
-        password: forgotPasswordState,
-        confirm_password: forgotConfirmPassword
-      });
-
-      const resBody = response.data;
-
-      if (!resBody.success) {
-        const errorText = resBody.errors?.map((e) => e.message).join('. ') || 'Password update failed.';
-        throw new Error(errorText);
-      }
-
-      const resultObj = resBody.result;
-      const successMessage = resultObj?.message || 'Password updated successfully! You can now log in.';
-
-      setForgotSuccess(successMessage);
-      setTimeout(() => {
-        setIsForgotModalOpen(false);
-        setForgotMobile('');
-        setForgotPasswordState('');
-        setForgotConfirmPassword('');
-        setShowForgotPassword(false);
-        setShowForgotConfirmPassword(false);
-        setForgotSuccess('');
-      }, 2000);
-    } catch (err: any) {
-      const apiErrors = err.response?.data?.errors;
-      const apiErrorMessage =
-        Array.isArray(apiErrors) && apiErrors.length > 0
-          ? apiErrors.map((e: any) => e.message || String(e)).join('. ')
-          : err.message || 'Failed to update password.';
-      setForgotError(apiErrorMessage);
-    } finally {
-      setForgotLoading(false);
     }
   };
 
@@ -250,24 +164,9 @@ export default function LoginPage(): React.ReactElement {
 
           {/* Password Input */}
           <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
-                Password
-              </label>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => {
-                  setIsForgotModalOpen(true);
-                  setForgotError('');
-                  setForgotSuccess('');
-                  if (mobile) setForgotMobile(mobile);
-                }}
-                className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Password
+            </label>
 
             <div className="relative">
               <input
@@ -311,147 +210,6 @@ export default function LoginPage(): React.ReactElement {
           </button>
         </form>
       </div>
-
-      {/* FORGOT PASSWORD MODAL */}
-      {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
-            <button
-              disabled={forgotLoading}
-              onClick={() => setIsForgotModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="mb-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mx-auto mb-3">
-                <LockKeyhole className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800">Reset Password</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Enter your registered mobile number to update your password.
-              </p>
-            </div>
-
-            {forgotError && (
-              <div className="flex items-start gap-2.5 p-3 mb-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-medium">
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                <div>{forgotError}</div>
-              </div>
-            )}
-
-            {forgotSuccess && (
-              <div className="flex items-start gap-2.5 p-3 mb-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-medium">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>{forgotSuccess}</div>
-              </div>
-            )}
-
-            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Mobile Number
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Smartphone className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={10}
-                    disabled={forgotLoading}
-                    value={forgotMobile}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setForgotMobile(e.target.value.replace(/\D/g, ''))
-                    }
-                    placeholder="Enter 10-digit mobile number"
-                    className="w-full pl-9 pr-3 py-2.5 bg-[#f1f3f6] border border-transparent rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showForgotPassword ? 'text' : 'password'}
-                    disabled={forgotLoading}
-                    value={forgotPasswordState}
-                    onChange={(e) => setForgotPasswordState(e.target.value)}
-                    placeholder="New password (min 6 chars)"
-                    className="w-full pl-3 pr-10 py-2.5 bg-[#f1f3f6] border border-transparent rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white focus:border-blue-500 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                    required
-                  />
-                  <button
-                    type="button"
-                    disabled={forgotLoading}
-                    onClick={() => setShowForgotPassword(!showForgotPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {showForgotPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showForgotConfirmPassword ? 'text' : 'password'}
-                    disabled={forgotLoading}
-                    value={forgotConfirmPassword}
-                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                    className={`w-full pl-3 pr-10 py-2.5 bg-[#f1f3f6] border rounded-xl text-sm text-slate-800 focus:outline-none focus:bg-white font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
-                      isPasswordMismatch
-                        ? 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
-                        : 'border-transparent focus:border-blue-500'
-                    }`}
-                    required
-                  />
-                  <button
-                    type="button"
-                    disabled={forgotLoading}
-                    onClick={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {showForgotConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {isPasswordMismatch && (
-                  <p className="text-[11px] text-rose-500 font-medium mt-1 animate-in fade-in flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> Password and Confirm Password do not match.
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={forgotLoading}
-                  onClick={() => setIsForgotModalOpen(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={forgotLoading || !isForgotFormFilled || isPasswordMismatch}
-                  className="px-5 py-2.5 bg-[#1B64F2] hover:bg-[#1553d1] text-white font-semibold rounded-xl text-xs flex items-center gap-2 transition disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
-                >
-                  {forgotLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Update Password'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
