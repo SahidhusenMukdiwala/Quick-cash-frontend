@@ -7,8 +7,11 @@
 +-----------------------+-----------------------+------------------------------------------------------+
 | Entry Modal & Toggle  | Alt + N               | Open New Entry Modal (Modal Closed; Default Cash In) |
 | Entry Modal & Toggle  | Alt + N               | Toggle Cash In <-> Cash Out (Modal Open)            |
-| Entry Modal & Toggle  | Alt + I               | Select 'Cash In (Received)' Type (Modal Open)        |
-| Entry Modal & Toggle  | Alt + O               | Select 'Cash Out (Paid)' Type (Modal Open)           |
+| Filter Controls       | Alt + S               | Jump & Focus Search Input Field                      |
+| Filter Controls       | Alt + M               | Jump & Focus Payment Mode Dropdown Filter            |
+| Filter Tabs           | Alt + 1 / Alt + 2 / Alt + 0 | Switch Table Filter (Cash In / Cash Out / All)        |
+| Entry Modal & Tabs    | Alt + 1 / Alt + I     | Select 'Cash In (Received)' Type (Modal Open)        |
+| Entry Modal & Tabs    | Alt + 2 / Alt + O     | Select 'Cash Out (Paid)' Type (Modal Open)           |
 +-----------------------+-----------------------+------------------------------------------------------+
 | Table Navigation      | Arrow Down ( ↓ )      | Move selection to Next Transaction Row               |
 | Table Navigation      | Arrow Up ( ↑ )        | Move selection to Previous Transaction Row           |

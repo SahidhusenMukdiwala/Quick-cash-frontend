@@ -112,6 +112,10 @@ export default function DashboardPage(): React.ReactElement {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
 
+  // Input & Select Refs for Keyboard Navigation Shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const modeSelectRef = useRef<HTMLSelectElement>(null);
+
   // Entry Modal (Create / Edit) State
   const [isEntryModalOpen, setIsEntryModalOpen] = useState<boolean>(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionItem | null>(null);
@@ -169,7 +173,9 @@ export default function DashboardPage(): React.ReactElement {
         if (resData.pagination) setPagination(resData.pagination);
       }
     } catch (err: any) {
-      console.error('Failed to fetch transactions', err);
+      if (err?.code !== 'ERR_CANCELED') {
+        console.error('Failed to fetch transactions', err);
+      }
     } finally {
       setTableLoading(false);
     }
@@ -380,18 +386,38 @@ export default function DashboardPage(): React.ReactElement {
         return;
       }
 
-      // 4. INSIDE ENTRY MODAL SHORTCUTS: Alt + I (Cash In) & Alt + O (Cash Out)
-      if (isEntryModalOpen) {
-        if (isAlt && key === 'i') {
-          e.preventDefault();
+      // 4. CASH IN / CASH OUT TAB SWITCHING: Alt + 1 (Cash In) & Alt + 2 (Cash Out)
+      const code = e.code;
+      const isSelectCashIn = isAlt && (key === '1' || key === 'i' || code === 'Digit1' || code === 'Numpad1');
+      const isSelectCashOut = isAlt && (key === '2' || key === 'o' || code === 'Digit2' || code === 'Numpad2');
+      const isSelectAll = isAlt && (key === '0' || key === 'a' || code === 'Digit0' || code === 'Numpad0');
+
+      if (isSelectCashIn) {
+        e.preventDefault();
+        if (isEntryModalOpen) {
           setFormData((prev) => ({ ...prev, type: 1 }));
-          return;
+        } else {
+          setTypeFilter('1');
+          setPage(1);
         }
-        if (isAlt && key === 'o') {
-          e.preventDefault();
+        return;
+      }
+
+      if (isSelectCashOut) {
+        e.preventDefault();
+        if (isEntryModalOpen) {
           setFormData((prev) => ({ ...prev, type: 2 }));
-          return;
+        } else {
+          setTypeFilter('2');
+          setPage(1);
         }
+        return;
+      }
+
+      if (isSelectAll && !isEntryModalOpen) {
+        e.preventDefault();
+        setTypeFilter('');
+        setPage(1);
         return;
       }
 
@@ -438,6 +464,21 @@ export default function DashboardPage(): React.ReactElement {
         if (transactions.length > 0 && selectedIndex >= 0 && selectedIndex < transactions.length) {
           handleOpenDeleteModal(transactions[selectedIndex]);
         }
+        return;
+      }
+
+      // 9. ALT + S -> Jump to Search Input Field
+      if (isAlt && key === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      // 10. ALT + M -> Jump to Payment Mode Dropdown Filter
+      if (isAlt && key === 'm') {
+        e.preventDefault();
+        modeSelectRef.current?.focus();
         return;
       }
     };
@@ -895,6 +936,7 @@ export default function DashboardPage(): React.ReactElement {
                 <div className="relative mt-0.5">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    ref={searchInputRef}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => {
@@ -902,6 +944,7 @@ export default function DashboardPage(): React.ReactElement {
                       setPage(1);
                     }}
                     placeholder="Search party or remark..."
+                    title="Search party or remark (Alt + S)"
                     className="w-full sm:w-64 pl-9 pr-4 py-1.5 bg-slate-100/90 border border-transparent rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition font-medium"
                   />
                 </div>
@@ -916,6 +959,7 @@ export default function DashboardPage(): React.ReactElement {
                       setTypeFilter('');
                       setPage(1);
                     }}
+                    title="All Transactions (Alt + 0)"
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition ${typeFilter === ''
                       ? 'bg-white text-slate-800 shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
@@ -928,6 +972,7 @@ export default function DashboardPage(): React.ReactElement {
                       setTypeFilter('1');
                       setPage(1);
                     }}
+                    title="Cash In Filter (Alt + 1)"
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition ${typeFilter === '1'
                       ? 'bg-emerald-500 text-white shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
@@ -940,6 +985,7 @@ export default function DashboardPage(): React.ReactElement {
                       setTypeFilter('2');
                       setPage(1);
                     }}
+                    title="Cash Out Filter (Alt + 2)"
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition ${typeFilter === '2'
                       ? 'bg-rose-500 text-white shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
@@ -951,12 +997,14 @@ export default function DashboardPage(): React.ReactElement {
 
                 {/* Payment Mode Dropdown Filter */}
                 <select
+                  ref={modeSelectRef}
                   value={paymentModeFilter}
                   onChange={(e) => {
                     setPaymentModeFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="px-3 py-1.5 bg-slate-100/90 border border-transparent rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-500"
+                  title="Filter by Payment Mode (Alt + M)"
+                  className="px-3 py-1.5 bg-slate-100/90 border border-transparent rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:bg-white focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="">All Modes</option>
                   <option value="1">Cash</option>
@@ -1001,11 +1049,10 @@ export default function DashboardPage(): React.ReactElement {
                         <tr
                           key={tx.id}
                           onClick={() => setSelectedIndex(idx)}
-                          className={`transition cursor-pointer ${
-                            isSelected
+                          className={`transition cursor-pointer ${isSelected
                               ? 'bg-emerald-50/70 border-l-4 border-l-emerald-500 font-semibold'
                               : 'hover:bg-slate-50/80'
-                          }`}
+                            }`}
                         >
                           <td className="py-3.5 px-5 font-bold text-slate-400">
                             <div className="flex items-center gap-1.5">
@@ -1037,10 +1084,10 @@ export default function DashboardPage(): React.ReactElement {
                           </td>
                           <td className="py-3.5 px-5">{getPaymentModeBadge(tx.payment_mode)}</td>
                           <td
-                            className="py-3.5 px-5 text-slate-500 max-w-[180px] truncate"
+                            className="py-3.5 px-5 text-slate-500 max-w-[180px] sm:max-w-[220px] truncate"
                             title={tx.remark || undefined}
                           >
-                            {tx.remark || '-'}
+                            {tx.remark || <span className="text-slate-300">-</span>}
                           </td>
                           <td className="py-3.5 px-5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -1464,14 +1511,40 @@ export default function DashboardPage(): React.ReactElement {
                   </tr>
                   <tr className="hover:bg-slate-50/50 transition">
                     <td className="py-3 px-3 font-semibold text-slate-800">
-                      Toggle Cash In / Cash Out <span className="font-normal text-slate-400 text-[11px]">(In Entry Modal)</span>
+                      Switch Table Filter <span className="font-normal text-slate-400 text-[11px]">(Cash In / Out / All)</span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
+                        Alt + 1 / 2 / 0
+                      </kbd>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50 transition">
+                    <td className="py-3 px-3 font-semibold text-slate-800">Focus Search Field</td>
+                    <td className="py-3 px-3 text-right">
+                      <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
+                        Alt + S
+                      </kbd>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50 transition">
+                    <td className="py-3 px-3 font-semibold text-slate-800">Focus Payment Mode Filter</td>
+                    <td className="py-3 px-3 text-right">
+                      <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
+                        Alt + M
+                      </kbd>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50 transition">
+                    <td className="py-3 px-3 font-semibold text-slate-800">
+                      Select Cash In / Cash Out <span className="font-normal text-slate-400 text-[11px]">(In Entry Form)</span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
-                          Alt + N
+                          Alt + 1 / 2
                         </kbd>
-                        <span className="text-slate-400 font-bold text-[10px]">AND</span>
+                        <span className="text-slate-400 font-bold text-[10px]">OR</span>
                         <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
                           Alt + I / O
                         </kbd>
