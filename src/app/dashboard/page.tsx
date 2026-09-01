@@ -34,6 +34,7 @@ import {
   Command
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
+import LoadingScreen from '@/components/common/LoadingScreen';
 
 interface UserProfile {
   id: number;
@@ -564,14 +565,7 @@ export default function DashboardPage(): React.ReactElement {
   };
 
   if (loading) {
-    return (
-      <div className="h-screen w-full bg-slate-900 flex flex-col items-center justify-center text-white select-none">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mb-4" />
-        <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-          Loading QuickCash Ledger...
-        </p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

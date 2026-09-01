@@ -17,6 +17,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
+import LoadingScreen from '@/components/common/LoadingScreen';
 
 interface UserProfile {
   id: number;
@@ -165,14 +166,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
-        <Loader2 className="w-9 h-9 animate-spin text-emerald-600 mb-3" />
-        <p className="text-xs font-bold text-slate-500 tracking-wide uppercase">
-          Verifying Authenticated Session...
-        </p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
