@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
 import LoadingScreen from '@/components/common/LoadingScreen';
+import Footer from '@/components/common/Footer';
 
 interface UserProfile {
   id: number;
@@ -809,7 +810,7 @@ export default function DashboardPage(): React.ReactElement {
         </header>
 
         {/* Inner Content Body */}
-        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto">
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto flex-1">
           {/* Welcome Banner */}
           <div className="bg-gradient-to-r from-[#002B2A] to-[#0A4D4A] rounded-2xl p-6 text-white shadow-md shadow-emerald-950/10 flex items-center justify-between relative overflow-hidden">
             <div className="relative z-10">
@@ -1153,6 +1154,7 @@ export default function DashboardPage(): React.ReactElement {
             )}
           </div>
         </div>
+        <Footer />
       </main>
 
       {/* CREATE / EDIT TRANSACTION MODAL */}

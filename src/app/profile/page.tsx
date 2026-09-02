@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
 import LoadingScreen from '@/components/common/LoadingScreen';
+import Footer from '@/components/common/Footer';
 
 interface UserProfile {
   id: number;
@@ -347,7 +348,7 @@ export default function ProfilePage() {
         </header>
 
         {/* Inner Content Body */}
-        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto">
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto flex-1">
           <div className="max-w-3xl w-full mx-auto space-y-6">
             {/* Profile Header Card */}
             <div className="bg-[#002B2A] rounded-2xl p-6 text-white shadow-md border border-emerald-900/60 flex items-center justify-between">
@@ -508,6 +509,7 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+        <Footer />
       </main>
 
       {/* LOGOUT CONFIRMATION MODAL */}

@@ -10,6 +10,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
+import Footer from '@/components/common/Footer';
 
 interface UserProfile {
   id: number;
@@ -114,9 +115,10 @@ export default function LoginPage(): React.ReactElement {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f4f6f9] flex items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
-      {/* Centered Login Card */}
-      <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all">
+    <div className="min-h-screen w-full bg-[#f4f6f9] flex flex-col items-center justify-between selection:bg-emerald-500 selection:text-white">
+      <div className="flex-1 flex items-center justify-center w-full p-4">
+        {/* Centered Login Card */}
+        <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all">
         {/* Top Logo & App Header */}
         <div className="flex flex-col items-center text-center mb-8">
           {/* QuickCash Icon Badge */}
@@ -210,6 +212,8 @@ export default function LoginPage(): React.ReactElement {
           </button>
         </form>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }
