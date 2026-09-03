@@ -9,6 +9,7 @@
 | Entry Modal & Toggle  | Alt + N               | Toggle Cash In <-> Cash Out (Modal Open)            |
 | Filter Controls       | Alt + S               | Jump & Focus Search Input Field                      |
 | Filter Controls       | Alt + M               | Jump & Focus Payment Mode Dropdown Filter            |
+| Export Controls       | Alt + X               | Toggle Export Ledger Data Dropdown Menu              |
 | Filter Tabs           | Alt + 1 / Alt + 2 / Alt + 0 | Switch Table Filter (Cash In / Cash Out / All)        |
 | Entry Modal & Tabs    | Alt + 1 / Alt + I     | Select 'Cash In (Received)' Type (Modal Open)        |
 | Entry Modal & Tabs    | Alt + 2 / Alt + O     | Select 'Cash Out (Paid)' Type (Modal Open)           |

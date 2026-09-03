@@ -31,11 +31,15 @@ import {
   EyeOff,
   ChevronDown,
   Keyboard,
-  Command
+  Command,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import axiosServices from '@/utils/axios';
 import LoadingScreen from '@/components/common/LoadingScreen';
 import Footer from '@/components/common/Footer';
+import XLSX from 'xlsx-js-style';
+import toast from 'react-hot-toast';
 
 interface UserProfile {
   id: number;
@@ -112,6 +116,9 @@ export default function DashboardPage(): React.ReactElement {
   const [page, setPage] = useState<number>(1);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
+
+  // Export Loading State
+  const [exportLoading, setExportLoading] = useState<boolean>(false);
 
   // Input & Select Refs for Keyboard Navigation Shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -482,6 +489,13 @@ export default function DashboardPage(): React.ReactElement {
         modeSelectRef.current?.focus();
         return;
       }
+
+      // 11. ALT + X -> Export Ledger Data
+      if (isAlt && key === 'x') {
+        e.preventDefault();
+        handleExport();
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -499,6 +513,223 @@ export default function DashboardPage(): React.ReactElement {
     handleOpenDeleteModal,
     handleConfirmDelete
   ]);
+
+  // Handle Styled Excel (.xlsx) Export using xlsx-js-style
+  const handleExport = useCallback(async () => {
+    setExportLoading(true);
+    try {
+      const params: Record<string, any> = { export: 'true' };
+      if (typeFilter) params.type = typeFilter;
+      if (paymentModeFilter) params.payment_mode = paymentModeFilter;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const response = await axiosServices.get<
+        ApiResponse<{
+          transactions: TransactionItem[];
+        }>
+      >('transactions/lists', { params });
+
+      const exportData = response.data?.result?.data?.transactions || [];
+
+      if (!exportData || exportData.length === 0) {
+        toast.error('No transactions found to export.');
+        return;
+      }
+
+      const getModeLabel = (mode: number) => {
+        switch (mode) {
+          case 1:
+            return 'Cash';
+          case 2:
+            return 'Cheque';
+          case 3:
+            return 'Online';
+          default:
+            return 'Other';
+        }
+      };
+
+      // 1. Create Array of Arrays for Sheet Data (starting directly with table headers)
+      const dataAOA: any[][] = [
+        ['ID', 'Date', 'Party / Paid To', 'Type', 'Amount (INR)', 'Payment Mode', 'Remark']
+      ];
+
+      let totalCashIn = 0;
+      let totalCashOut = 0;
+
+      // 2. Populate Transaction Data Rows
+      exportData.forEach((tx) => {
+        const isCashIn = tx.type === 1;
+        if (isCashIn) {
+          totalCashIn += Number(tx.amount || 0);
+        } else {
+          totalCashOut += Number(tx.amount || 0);
+        }
+
+        dataAOA.push([
+          `${tx.id}`,
+          tx.transaction_date ? tx.transaction_date.substring(0, 10) : '-',
+          tx.paid_to || 'N/A',
+          isCashIn ? 'Cash In' : 'Cash Out',
+          Number(tx.amount || 0),
+          getModeLabel(tx.payment_mode),
+          tx.remark || ''
+        ]);
+      });
+
+      // 3. Add Summary Totals Section
+      dataAOA.push([]); // Blank separator
+      dataAOA.push(['', '', '', 'Total Cash In', totalCashIn, '', '']);
+      dataAOA.push(['', '', '', 'Total Cash Out', totalCashOut, '', '']);
+      dataAOA.push(['', '', '', 'Net Balance', totalCashIn - totalCashOut, '', '']);
+
+      // 4. Build Worksheet
+      const ws = XLSX.utils.aoa_to_sheet(dataAOA);
+
+      // Define Professional Custom Cell Styles
+      const titleStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 14, name: 'Arial' },
+        fill: { fgColor: { rgb: '002B2A' } }, // Brand dark green
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+
+      const subTitleStyle = {
+        font: { italic: true, color: { rgb: '475569' }, sz: 10, name: 'Arial' },
+        fill: { fgColor: { rgb: 'F8FAFC' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Arial' },
+        fill: { fgColor: { rgb: '0F5147' } }, // Teal header background
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: {
+          top: { style: 'thin', color: { rgb: '001F1E' } },
+          bottom: { style: 'medium', color: { rgb: '001F1E' } }
+        }
+      };
+
+      const defaultRowStyle = {
+        font: { sz: 10, name: 'Arial', color: { rgb: '1E293B' } },
+        alignment: { vertical: 'center' }
+      };
+
+      const cashInStyle = {
+        font: { bold: true, color: { rgb: '047857' }, sz: 10, name: 'Arial' },
+        fill: { fgColor: { rgb: 'ECFDF5' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+
+      const cashOutStyle = {
+        font: { bold: true, color: { rgb: 'B91C1C' }, sz: 10, name: 'Arial' },
+        fill: { fgColor: { rgb: 'FEF2F2' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+
+      const amountStyle = {
+        font: { bold: true, sz: 10, name: 'Arial', color: { rgb: '0F172A' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        numFmt: '₹ #,##0'
+      };
+
+      const summaryHeaderStyle = {
+        font: { bold: true, color: { rgb: '0F172A' }, sz: 10, name: 'Arial' },
+        fill: { fgColor: { rgb: 'E2E8F0' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+
+      const summaryValueStyle = {
+        font: { bold: true, color: { rgb: '0F5147' }, sz: 10, name: 'Arial' },
+        fill: { fgColor: { rgb: 'F1F5F9' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        numFmt: '₹ #,##0'
+      };
+
+      // Apply Styles to Header Row (Row 1: A1 to G1)
+      const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+      cols.forEach((col) => {
+        const cellRef = `${col}1`;
+        if (ws[cellRef]) ws[cellRef].s = headerStyle;
+      });
+
+      // Apply Styles to Data Rows (starting from Row 2)
+      const startRow = 2;
+      const endRow = startRow + exportData.length - 1;
+
+      for (let r = startRow; r <= endRow; r++) {
+        cols.forEach((col) => {
+          const cellRef = `${col}${r}`;
+          if (ws[cellRef]) ws[cellRef].s = { ...defaultRowStyle };
+        });
+
+        if (ws[`A${r}`]) ws[`A${r}`].s = { ...defaultRowStyle, alignment: { horizontal: 'center' } };
+        if (ws[`B${r}`]) ws[`B${r}`].s = { ...defaultRowStyle, alignment: { horizontal: 'center' } };
+        if (ws[`F${r}`]) ws[`F${r}`].s = { ...defaultRowStyle, alignment: { horizontal: 'center' } };
+
+        const typeCell = ws[`D${r}`];
+        if (typeCell) {
+          typeCell.s = typeCell.v === 'Cash In' ? cashInStyle : cashOutStyle;
+        }
+
+        const amtCell = ws[`E${r}`];
+        if (amtCell) {
+          amtCell.s = amountStyle;
+        }
+      }
+
+      // Apply Styles to Summary Section
+      const summaryStartRow = endRow + 2;
+      for (let r = summaryStartRow; r <= summaryStartRow + 2; r++) {
+        const labelCell = ws[`D${r}`];
+        const valCell = ws[`E${r}`];
+        if (labelCell) labelCell.s = summaryHeaderStyle;
+        if (valCell) valCell.s = summaryValueStyle;
+      }
+
+      // Set Custom Column Widths
+      ws['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: 14 }, // Date
+        { wch: 28 }, // Party / Paid To
+        { wch: 14 }, // Type
+        { wch: 18 }, // Amount
+        { wch: 16 }, // Payment Mode
+        { wch: 35 }  // Remark
+      ];
+
+      // Build Workbook & File Download
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ledger Transactions');
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const hasFilter = Boolean(typeFilter || paymentModeFilter || searchQuery.trim());
+
+      const filename = `QuickCash_Ledger_${currentDate}.xlsx`
+      // hasFilter
+      //   ? `QuickCash_Ledger_Filtered_${currentDate}.xlsx`
+      //   : `QuickCash_Ledger_${currentDate}.xlsx`;
+
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // toast.success('Excel spreadsheet exported successfully!');
+    } catch (err) {
+      console.error('Failed to export Excel spreadsheet', err);
+      toast.error('Failed to export Excel spreadsheet. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
+  }, [typeFilter, paymentModeFilter, searchQuery]);
 
   // Handle Profile Update Submit
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -791,10 +1022,21 @@ export default function DashboardPage(): React.ReactElement {
               className="px-2.5 py-1.5 sm:py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition shrink-0 border border-slate-200/80"
             >
               <Keyboard className="w-3.5 h-3.5 text-slate-600" />
-              {/* <span className="hidden sm:inline">Shortcuts</span> */}
-              {/* <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-300 rounded text-slate-500 shadow-2xs">
-                Alt+H
-              </kbd> */}
+            </button>
+
+            {/* Export Direct Button */}
+            <button
+              onClick={handleExport}
+              disabled={exportLoading}
+              title="Export Ledger Data (Alt + X)"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition shrink-0 border border-emerald-200/80 shadow-2xs"
+            >
+              {exportLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+              )}
+              <span>Export</span>
             </button>
 
             {/* New Entry Action Button */}
@@ -812,7 +1054,7 @@ export default function DashboardPage(): React.ReactElement {
         {/* Inner Content Body */}
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto flex-1">
           {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-[#002B2A] to-[#0A4D4A] rounded-2xl p-6 text-white shadow-md shadow-emerald-950/10 flex items-center justify-between relative overflow-hidden">
+          {/* <div className="bg-gradient-to-r from-[#002B2A] to-[#0A4D4A] rounded-2xl p-6 text-white shadow-md shadow-emerald-950/10 flex items-center justify-between relative overflow-hidden">
             <div className="relative z-10">
               <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
                 Financial Ledger Summary
@@ -834,7 +1076,7 @@ export default function DashboardPage(): React.ReactElement {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Dynamic Metric Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -1051,8 +1293,8 @@ export default function DashboardPage(): React.ReactElement {
                           key={tx.id}
                           onClick={() => setSelectedIndex(idx)}
                           className={`transition cursor-pointer ${isSelected
-                              ? 'bg-emerald-50/70 border-l-4 border-l-emerald-500 font-semibold'
-                              : 'hover:bg-slate-50/80'
+                            ? 'bg-emerald-50/70 border-l-4 border-l-emerald-500 font-semibold'
+                            : 'hover:bg-slate-50/80'
                             }`}
                         >
                           <td className="py-3.5 px-5 font-bold text-slate-400">
@@ -1534,6 +1776,14 @@ export default function DashboardPage(): React.ReactElement {
                     <td className="py-3 px-3 text-right">
                       <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
                         Alt + M
+                      </kbd>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50 transition">
+                    <td className="py-3 px-3 font-semibold text-slate-800">Toggle Export Menu</td>
+                    <td className="py-3 px-3 text-right">
+                      <kbd className="px-2.5 py-1 bg-slate-100 border border-slate-200 shadow-2xs rounded-lg font-mono text-xs font-bold text-slate-800">
+                        Alt + X
                       </kbd>
                     </td>
                   </tr>
