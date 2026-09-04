@@ -14,8 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'QuickCash Ledger - Authentication & Session Portal',
+  title: {
+    default: 'QuickCash Ledger',
+    template: 'QuickCash Ledger - %s'
+  },
   description: 'Secure, modern financial ledger management software.',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }]
+  }
 };
 
 export default function RootLayout({
