@@ -21,6 +21,7 @@
 +-----------------------+-----------------------+------------------------------------------------------+
 | General Controls      | Enter                 | Confirm & Execute Deletion in Delete Modal           |
 | General Controls      | Escape ( Esc )        | Close Any Active Modal Dialog                        |
+| General Controls      | Alt + L               | Open Logout Confirmation Modal                       |
 | General Controls      | Alt + H / Shift + ?   | Toggle Keyboard Shortcuts Reference Modal            |
 +-----------------------+-----------------------+------------------------------------------------------+
 
