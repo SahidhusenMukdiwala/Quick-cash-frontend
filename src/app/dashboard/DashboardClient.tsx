@@ -42,7 +42,7 @@ import XLSX from 'xlsx-js-style';
 import toast from 'react-hot-toast';
 
 interface UserProfile {
-  id: number;
+  id: string | number;
   name: string;
   mobile: string;
   role: number;
@@ -50,7 +50,7 @@ interface UserProfile {
 }
 
 interface TransactionItem {
-  id: number;
+  id: string | number;
   type: number; // 1 = Cash In, 2 = Cash Out
   paid_to: string | null;
   amount: number;
@@ -82,6 +82,18 @@ interface ApiResponse<T = any> {
     data?: T;
   };
 }
+
+// Format date as DD-MM-YYYY
+const formatDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '-';
+  const cleanDate = dateStr.substring(0, 10);
+  const parts = cleanDate.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}-${month}-${year}`;
+  }
+  return dateStr;
+};
 
 export default function DashboardPage(): React.ReactElement {
   const router = useRouter();
@@ -141,6 +153,7 @@ export default function DashboardPage(): React.ReactElement {
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [deletingTransaction, setDeletingTransaction] = useState<TransactionItem | null>(null);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   // Profile Form State
@@ -322,10 +335,20 @@ export default function DashboardPage(): React.ReactElement {
   };
 
   // Open Delete Confirmation Modal
-  const handleOpenDeleteModal = useCallback((tx: TransactionItem) => {
+  const handleOpenDeleteModal = useCallback((tx: TransactionItem, rowIdx?: number) => {
     setDeletingTransaction(tx);
+    if (rowIdx !== undefined) {
+      setDeletingIndex(rowIdx);
+    } else {
+      const idx = transactions.findIndex((t) => t.id === tx.id);
+      if (idx !== -1) {
+        setDeletingIndex((pagination.currentPage - 1) * pagination.limit + idx + 1);
+      } else {
+        setDeletingIndex(null);
+      }
+    }
     setIsDeleteModalOpen(true);
-  }, []);
+  }, [transactions, pagination]);
 
   // Confirm Delete Transaction
   const handleConfirmDelete = useCallback(async () => {
@@ -336,6 +359,7 @@ export default function DashboardPage(): React.ReactElement {
       await axiosServices.delete(`transactions/delete/${deletingTransaction.id}`);
       setIsDeleteModalOpen(false);
       setDeletingTransaction(null);
+      setDeletingIndex(null);
       fetchTransactions();
     } catch (err: any) {
       console.error('Failed to delete transaction', err);
@@ -566,7 +590,7 @@ export default function DashboardPage(): React.ReactElement {
       let totalCashOut = 0;
 
       // 2. Populate Transaction Data Rows
-      exportData.forEach((tx) => {
+      exportData.forEach((tx, idx) => {
         const isCashIn = tx.type === 1;
         if (isCashIn) {
           totalCashIn += Number(tx.amount || 0);
@@ -575,8 +599,8 @@ export default function DashboardPage(): React.ReactElement {
         }
 
         dataAOA.push([
-          `${tx.id}`,
-          tx.transaction_date ? tx.transaction_date.substring(0, 10) : '-',
+          `${idx + 1}`,
+          formatDate(tx.transaction_date),
           tx.paid_to || 'N/A',
           isCashIn ? 'Cash In' : 'Cash Out',
           Number(tx.amount || 0),
@@ -1296,6 +1320,7 @@ export default function DashboardPage(): React.ReactElement {
                   ) : (
                     transactions.map((tx, idx) => {
                       const isSelected = idx === selectedIndex;
+                      const rowNumber = (pagination.currentPage - 1) * pagination.limit + idx + 1;
                       return (
                         <tr
                           key={tx.id}
@@ -1310,11 +1335,11 @@ export default function DashboardPage(): React.ReactElement {
                               {isSelected && (
                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                               )}
-                              #{tx.id}
+                              #{rowNumber}
                             </div>
                           </td>
                           <td className="py-3.5 px-5 font-semibold text-slate-600">
-                            {tx.transaction_date ? tx.transaction_date.substring(0, 10) : '-'}
+                            {formatDate(tx.transaction_date)}
                           </td>
                           <td className="py-3.5 px-5 font-bold text-slate-800">
                             {tx.paid_to || <span className="text-slate-400 font-normal">N/A</span>}
@@ -1357,7 +1382,7 @@ export default function DashboardPage(): React.ReactElement {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedIndex(idx);
-                                  handleOpenDeleteModal(tx);
+                                  handleOpenDeleteModal(tx, rowNumber);
                                 }}
                                 title="Delete Entry (Alt + D / Delete)"
                                 className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
@@ -1629,8 +1654,14 @@ export default function DashboardPage(): React.ReactElement {
               Delete Transaction
             </h3>
             <p className="text-xs text-slate-500 mt-1.5 font-normal leading-relaxed">
-              Are you sure you want to delete transaction entry <strong>#{deletingTransaction.id}</strong> (₹
-              {deletingTransaction.amount.toLocaleString('en-IN')})?
+              Are you sure you want to delete transaction entry{' '}
+              <strong>#{deletingIndex !== null ? deletingIndex : 'entry'}</strong>{' '}
+              {deletingTransaction.paid_to ? (
+                <>
+                  for <strong>{deletingTransaction.paid_to}</strong>
+                </>
+              ) : null}{' '}
+              (₹{deletingTransaction.amount.toLocaleString('en-IN')})?
             </p>
 
             {/* <p className="text-[11px] text-slate-400 mt-3 font-normal">

@@ -5,10 +5,40 @@ const axiosServices = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/'
 });
 
+// Fetch public IP address helper (cached in localStorage)
+let ipPromise: Promise<string | null> | null = null;
+
+const getPublicIP = async (): Promise<string | null> => {
+  if (typeof window === 'undefined') return null;
+  const cached = localStorage.getItem('userIP');
+  if (cached) return cached;
+
+  if (!ipPromise) {
+    ipPromise = (async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        if (data && data.ip) {
+          localStorage.setItem('userIP', data.ip);
+          return data.ip;
+        }
+      } catch (err) {
+        // Fallback to backend req.ip if this fails
+      }
+      return null;
+    })();
+  }
+
+  return ipPromise;
+};
+
 // ==============================|| AXIOS INTERCEPTORS ||============================== //
 
 axiosServices.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token') || localStorage.getItem('serviceToken');
     const role = localStorage.getItem('role') || sessionStorage.getItem('role');
 
@@ -22,7 +52,7 @@ axiosServices.interceptors.request.use(
 
     // Attach user's public IP address to x-forwarded-for header
     if (typeof window !== 'undefined') {
-      const userIP = localStorage.getItem('userIP');
+      const userIP = await getPublicIP();
       if (userIP) {
         config.headers['x-forwarded-for'] = userIP;
       }
@@ -34,21 +64,6 @@ axiosServices.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
-// Fetch public IP address once and cache it in localStorage
-if (typeof window !== 'undefined') {
-  (async () => {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      if (data && data.ip) {
-        localStorage.setItem('userIP', data.ip);
-      }
-    } catch (err) {
-      // Silent error - will fallback to backend req.ip if this fails
-    }
-  })();
-}
 
 axiosServices.interceptors.response.use(
   (response) => response,
